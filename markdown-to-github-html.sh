@@ -7,6 +7,7 @@ CUSTOM_INPUT=0
 OUTPUT="/dev/stdout"
 CUSTOM_OUTPUT=0
 COMPILER="marked --gfm"
+YES=0 #Set to 1 for --yes flag
 
 print_help() {
 	echo "Usage: $NAME [OPTION]... [INPUT]"
@@ -40,6 +41,11 @@ while [ $# -gt 0 ]; do
 			CUSTOM_OUTPUT=1
 			shift 2
 			;;
+		-y | --yes)
+			PROMPT="y"
+			YES=1
+			shift
+			;;
 		*)
 			INPUT="$1"
 			CUSTOM_INPUT=1
@@ -50,8 +56,10 @@ done
 
 # Check if overwrite
 if [ $CUSTOM_OUTPUT -eq 1 ] && [ -e "$OUTPUT" ]; then
-	echo -n "File $OUTPUT already exists. Overwrite it? [y/N] "
-	read -r PROMPT
+	if [ $YES -eq 0 ]; then
+		echo -n "File $OUTPUT already exists. Overwrite it? [y/N] "
+		read -r PROMPT
+	fi
 	if [ "$PROMPT" = "y" ]; then
 		echo -n "" > "$OUTPUT"
 	else
@@ -61,8 +69,10 @@ fi
 
 # Prompt to download CSS file if not in CWD or same directory as NAME
 if [ ! -e "github-markdown.css" ] || [ ! -e "$(dirname "$NAME")/github-markdown.css" ]; then
-	echo -n "Download github-markdown.css to current working directory? [Y/n] "
-	read -r PROMPT
+	if [ $YES -eq 0 ]; then
+		echo -n "Download github-markdown.css to current working directory? [Y/n] "
+		read -r PROMPT
+	fi
 	if [ ! "$PROMPT" = "n" ]; then
 		wget "$CSS_LINK"
 	fi
