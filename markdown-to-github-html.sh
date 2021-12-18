@@ -2,6 +2,7 @@
 
 NAME="$0"
 CSS_LINK="https://raw.githubusercontent.com/sindresorhus/github-markdown-css/gh-pages/github-markdown.css"
+CSS_PATH="./github-markdown.css"
 INPUT="/dev/stdin"
 CUSTOM_INPUT=0
 OUTPUT="/dev/stdout"
@@ -13,10 +14,11 @@ print_help() {
 	echo "Usage: $NAME [OPTION]... [INPUT]"
 	echo "Compile INPUT markdown file to github-styled html"
 	echo ""
-	echo "      --compiler [COMPILER]	set the markdown compiler to use. Default is marked --gfm"
+	echo "      --compiler COMPILER	set the markdown compiler to use. Default is marked --gfm"
+	echo "  -c, --css CSS_PATH		set the github-markdown.css file path (by default github-markdown.css in the CWD)"
 	echo "  -h, --help			print this help message"
-	echo "  -i, --input [INPUT]		specify INPUT file"
-	echo "  -o, --output [OUTPUT]		output to specified OUTPUT file"
+	echo "  -i, --input INPUT		specify INPUT file"
+	echo "  -o, --output OUTPUT		output to specified OUTPUT file"
 	echo "  -y, --yes 			automatic yes to prompts"
 }
 
@@ -25,6 +27,10 @@ while [ $# -gt 0 ]; do
 	case $1 in
 		--compiler)
 			COMPILER="$2"
+			shift 2
+			;;
+		-c | --css)
+			CSS_PATH="$2"
 			shift 2
 			;;
 		-h | --help)
@@ -67,20 +73,20 @@ if [ $CUSTOM_OUTPUT -eq 1 ] && [ -e "$OUTPUT" ]; then
 	fi
 fi
 
-# Prompt to download CSS file if not in CWD or same directory as NAME
-if [ ! -e "github-markdown.css" ] || [ ! -e "$(dirname "$NAME")/github-markdown.css" ]; then
+# Prompt to download CSS file if not in CWD/specified CSS_PATH
+if [ ! -e "$CSS_PATH" ]; then
 	if [ $YES -eq 0 ]; then
-		echo -n "Download github-markdown.css to current working directory? [Y/n] "
+		echo -n "Download github-markdown.css to $CSS_PATH? [Y/n] "
 		read -r PROMPT
 	fi
 	if [ ! "$PROMPT" = "n" ]; then
-		wget "$CSS_LINK"
+		wget "$CSS_LINK" -O "$CSS_PATH"
 	fi
 fi
 
 # Add meta, link, and style lines to OUTPUT
 echo "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" >> "$OUTPUT"
-echo "<link rel=\"stylesheet\" href=\"github-markdown.css\">" >> "$OUTPUT"
+echo "<link rel=\"stylesheet\" href=\"$CSS_PATH\">" >> "$OUTPUT"
 echo "<style>" >> "$OUTPUT"
 echo "	.markdown-body {" >> "$OUTPUT"
 echo "		box-sizing: border-box;" >> "$OUTPUT"
@@ -99,7 +105,6 @@ echo "</style>" >> "$OUTPUT"
 echo "<article class=\"markdown-body\">" >> "$OUTPUT"
 
 # Add body (from markdown) using compiler (default is marked --gfm)
-# TODO work on getting syntax highlighting support
 $COMPILER "$INPUT" >> "$OUTPUT"
 
 # Close output
