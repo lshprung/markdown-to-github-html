@@ -59,6 +59,15 @@ if [ $CUSTOM_OUTPUT -eq 1 ] && [ -e "$OUTPUT" ]; then
 	fi
 fi
 
+# Prompt to download CSS file if not in CWD or same directory as NAME
+if [ ! -e "github-markdown.css" ] || [ ! -e "$(dirname "$NAME")/github-markdown.css" ]; then
+	echo -n "Download github-markdown.css to current working directory? [Y/n] "
+	read -r PROMPT
+	if [ ! "$PROMPT" = "n" ]; then
+		wget "$CSS_LINK"
+	fi
+fi
+
 # Add meta, link, and style lines to OUTPUT
 echo "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" >> "$OUTPUT"
 echo "<link rel=\"stylesheet\" href=\"github-markdown.css\">" >> "$OUTPUT"
