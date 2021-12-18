@@ -8,18 +8,20 @@ CUSTOM_INPUT=0
 OUTPUT="/dev/stdout"
 CUSTOM_OUTPUT=0
 COMPILER="marked --gfm"
-YES=0 #Set to 1 for --yes flag
+ENABLE_JS=0 #Set to 1 for --highlight flag
+YES=0       #Set to 1 for --yes flag
 
 print_help() {
 	echo "Usage: $NAME [OPTION]... [INPUT]"
 	echo "Compile INPUT markdown file to github-styled html"
 	echo ""
-	echo "      --compiler COMPILER	set the markdown compiler to use. Default is marked --gfm"
-	echo "  -c, --css CSS_PATH		set the github-markdown.css file path (by default github-markdown.css in the CWD)"
-	echo "  -h, --help			print this help message"
-	echo "  -i, --input INPUT		specify INPUT file"
-	echo "  -o, --output OUTPUT		output to specified OUTPUT file"
-	echo "  -y, --yes 			automatic yes to prompts"
+	echo "      --compiler COMPILER		set the markdown compiler to use. Default is marked --gfm"
+	echo "  -c, --css CSS_PATH			set the github-markdown.css file path (by default github-markdown.css in the CWD)"
+	echo "  -h, --help				print this help message"
+	echo "      --highlight 		enable highlight.js support for code blocks (uses cdnjs as source)"
+	echo "  -i, --input INPUT			specify INPUT file"
+	echo "  -o, --output OUTPUT			output to specified OUTPUT file"
+	echo "  -y, --yes 				automatic yes to prompts"
 }
 
 # Parse arguments
@@ -36,6 +38,10 @@ while [ $# -gt 0 ]; do
 		-h | --help)
 			print_help
 			exit 1
+			;;
+		--highlight)
+			ENABLE_JS=1
+			shift
 			;;
 		-i | --input)
 			INPUT="$2"
@@ -87,6 +93,14 @@ fi
 # Add meta, link, and style lines to OUTPUT
 echo "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" >> "$OUTPUT"
 echo "<link rel=\"stylesheet\" href=\"$CSS_PATH\">" >> "$OUTPUT"
+
+# Add JS script sources, if enabled
+if [ $ENABLE_JS ]; then
+	echo "<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css\">" >> "$OUTPUT"
+	echo "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js\"></script>" >> "$OUTPUT"
+	echo "<script>hljs.highlightAll();</script>" >> "$OUTPUT"
+fi
+
 echo "<style>" >> "$OUTPUT"
 echo "	.markdown-body {" >> "$OUTPUT"
 echo "		box-sizing: border-box;" >> "$OUTPUT"
