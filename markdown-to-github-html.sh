@@ -1,8 +1,8 @@
-#!/usr/bin/sh
+#!/usr/bin/bash
 
 NAME="$0"
 CSS_LINK_DIR="https://raw.githubusercontent.com/sindresorhus/github-markdown-css/main"
-CSS_PATH="./github-markdown-light.css"
+CSS_PATH=("./github-markdown-light.css")
 CUSTOM_CSS_PATH=0
 INPUT="/dev/stdin"
 CUSTOM_INPUT=0
@@ -18,7 +18,7 @@ print_help() {
 	echo "Compile INPUT markdown file to github-styled html"
 	echo ""
 	echo "      --compiler COMPILER	set the markdown compiler to use. Default is marked --gfm"
-	echo "  -c, --css CSS_PATH		set the github-markdown.css file path (by default github-markdown-light.css in the CWD)"
+	echo "  -c, --css CSS_PATH		set the github-markdown.css file path (by default github-markdown-light.css in the CWD). This option can be invoked multiple times for multiple css links"
 	echo "  -h, --help			print this help message"
 	echo "      --highlight 		enable highlight.js support for code blocks (uses cdnjs as source)"
 	echo "  -i, --input INPUT		specify INPUT file"
@@ -35,8 +35,12 @@ while [ $# -gt 0 ]; do
 			shift 2
 			;;
 		-c | --css)
-			CSS_PATH="$2"
-			CUSTOM_CSS_PATH=1
+			if [ $CUSTOM_CSS_PATH -eq 1 ]; then
+				CSS_PATH+=("$2")
+			else
+				CSS_PATH=("$2")
+				CUSTOM_CSS_PATH=1
+			fi
 			shift 2
 			;;
 		-h | --help)
@@ -61,7 +65,7 @@ while [ $# -gt 0 ]; do
 			if [ "$2" = "dark" ]; then
 				THEME="dark"
 				if [ $CUSTOM_CSS_PATH -eq 0 ]; then
-					CSS_PATH="./github-markdown-dark.css"
+					CSS_PATH=("./github-markdown-dark.css")
 				fi
 			fi
 			shift 2
@@ -92,20 +96,28 @@ if [ $CUSTOM_OUTPUT -eq 1 ] && [ -e "$OUTPUT" ]; then
 	fi
 fi
 
-# Prompt to download CSS file if not in CWD/specified CSS_PATH
-if [ ! -e "$CSS_PATH" ]; then
-	if [ $YES -eq 0 ]; then
-		echo -n "Download github-markdown-$THEME.css to $CSS_PATH? [Y/n] "
-		read -r PROMPT
+# Prompt to download CSS file if not in CWD/specified CSS_PATH (don't try if css link is a URL)
+for path in "${CSS_PATH[@]}"; do
+	echo "$path" | grep -Eq "http[s]?://"
+	if [ $? -eq 1 ] && [ ! -e "$path" ]; then
+		if [ $YES -eq 0 ]; then
+			echo -n "Download github-markdown-$THEME.css to $path? [Y/n] "
+			read -r PROMPT
+		fi
+		if [ ! "$PROMPT" = "n" ]; then
+			wget "$CSS_LINK_DIR/github-markdown-$THEME.css" -O "$path"
+		fi
 	fi
-	if [ ! "$PROMPT" = "n" ]; then
-		wget "$CSS_LINK_DIR/github-markdown-$THEME.css" -O "$CSS_PATH"
-	fi
-fi
+done
 
-# Add meta, link, and style lines to OUTPUT
+# Add meta lines to OUTPUT
 echo "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" >> "$OUTPUT"
-echo "<link rel=\"stylesheet\" href=\"$CSS_PATH\">" >> "$OUTPUT"
+
+# Add each specified CSS source
+
+for path in "${CSS_PATH[@]}"; do
+	echo "<link rel=\"stylesheet\" href=\"$path\">" >> "$OUTPUT"
+done
 
 # Add JS script sources, if enabled
 if [ $ENABLE_JS ]; then
